@@ -1,119 +1,25 @@
-# ActivityPub Server
+# Indie Inbox
 
-An [ActivityPub](https://activitypub.rocks) server that can present Actors, create Objects, and deliver Activities.
+A hosted solution for adding just the right amount of functionality to an existing Indieweb site (like a personal blog on its own domain) to create a functional and interactive ActivityPub server.
 
-## Starting the server
+The idea is that you are responsible for all the static, read-only stuff that ActivityPub requires, and then you use this service to manage the collections that can be modified by others—your inbox, followers, and following—while also handling delivery of your outbox activities.
 
-If you're starting from scratch, install all the dependencies first:
+## 1. Listening for follows
 
-```
-gem install bundler
-bundle install
-```
+This service needs to know who's subscribed. When a follow request comes in, it is accepted and stored for later use. (Unfollows work the same way, but in reverse.) All of this is transparent to you.
 
-Then you're ready for this:
+### 1a. Following others
 
-```
-bundle exec unicorn
-```
+If you publish a Follow activity in your outbox, this service will listen for an Accept activity after delivering that Follow and update your Following collection for you.
 
-The server will start running on port 8080, and you're ready to expose it to the web with something like nginx.
+## 2. Broadcasting new activity
 
-## Sample nginx configuration
+When this service is made aware of an update to your outbox, it will deliver the new activities to your followers. You can tell the service to check your outbox by sending a `PUT` request to your managed actor URL.
 
-Let's assume you have an existing site that's already happily being served with nginx. This app is designed to only handle incoming requests with the activitystreams Accept header, so it can live right alongside your site and even share some URLs if necessary.
+## 3. Checking your messages
 
-First, set up a `proxy_pass` at a path that's unlikely to be shared by any other pages on your site that points to wherever this app is running (port 8080 is the Unicorn default):
+When you create an account with Indie Inbox, you are given an auth token that will allow you to send GET requests to your inbox. With this you can see anything that's been sent to you.
 
-    location /activitypub/ {
-      proxy_pass http://localhost:8080/;
-    }
+# Limitations
 
-Then, in **inside your existing `location /` directive**, add some conditional rewrites before everything else:
-
-    location / {
-      if ($http_accept ~ application\/ld\+json) {
-        rewrite ^/(.+) /activitypub/$1 last;
-      }
-
-      if ($http_content_type ~ activity\+json) {
-        rewrite ^/(.+) /activitypub/$1 last;
-      }
-
-      # the rest of your existing `location /` directive would be here
-    }
-
-You probably want to redirect requests whose path start with `.well-known/` to this app as well, although you may have other software serving data at paths like that. (If you do, you probably already know how to patch this into your existing processes.)
-
-   location /.well-known/ {
-      rewrite ^/(.+) /activitypub/$1 last;
-    }
-
-Now reload your config and see if it worked! Happy content negotiating!
-
-For more on nginx, [this guide](https://www.digitalocean.com/community/tutorials/how-to-deploy-a-rails-app-with-unicorn-and-nginx-on-ubuntu-14-04#install-and-configure-nginx) should get you going in the right direction.
-
-## Creating an Account
-
-There’s a command line script for this:
-
-```
-rake accounts:create -- --username john --display-name "John Holdun" --summary "Greetings from me" --icon-url "https://johnholdun.com/images/bookworm-full.png"
-```
-
-Fill in your own options to create a new account on your server. The icon needs to already exist at the URL you specify; this server does not handle media uploads. You can also add the `--help` flag to see the options this command accepts:
-
-```
-rake accounts:create -- --help
-```
-
-## Adding to the Outbox
-
-Following the standard ActivityPub flow, you can `Create` `Note`s, `Follow` `Person`s, and more:
-
-```
-curl -i -X POST -H "Authorization: Bearer exampletoken" -H "Content-Type: application/json" -d '{"type":"Like","object":"https://mastodon.social/users/johnholdun/statuses/1508775"}' https://johnholdun.localtunnel.me/users/john/outbox
-```
-
-If the request works, you'll receive a 201 with a Location header that directs you to your created Activity. In order to deliver this Activity to the relevant parties, you'll need to run the outbox queue.
-
-### Addressing your audience
-
-The outbox makes no assumptions about who you want to notify about your creations. If you don't specify `to` or `cc` fields, it won't be sent to anyone! Here are some recommendations for who to send to, by type of object:
-
-- Like: to author of liked object
-- Follow: to target
-- Note: to public, cc followers and anyone tagged and author of reply, if applicable
-- Announce: to public, cc followers and author of object being announced
-
-An Undo should generally be sent to the same audience as the activity it's undoing.
-
-## The Queue
-
-The inbox flow for this project is designed to be minimally process-intensive. Any request to an inbox URL will be accepted and written to the `unverified_inbox` table without being parsed. A second process will parse these items one at a time, in the order they were received, saving activities and accepting follows as appropriate. You can run the parser like so:
-
-```
-rake inbox:parse
-```
-
-This command will parse all new activities and exit. If there is a problem parsing an activity, its `errors` column will be populated with helpful information; this item will be ignored on subsequent runs and manual intervention will be required. There's no built-in mechanism for running this parser continuously yet, but a frequent cron job might do the trick.
-
-There's another process for delivering activities that are added to your local outbox. You can have this clear out a batch of outbox items in a similar way to the inbox queue:
-
-```
-rake outbox:parse
-```
-
-## To Do
-
-### Static content
-
-The POST /inbox requests _may_ be the most heavily-used routes (which is why they are designed the way they are, to reduce processing time), but GETs require little to no logic. To make this app as performant as possible, I want most GET requests to return static data (i.e. pre-generated JSON files). The biggest piece of work here involves creating slices of feeds that are suitable for pagination.
-
-### Authentication
-
-Any outbox POST is just checked against a static string right now. I think adopting [IndieLogin](https://indielogin.com/) makes sense here.
-
-## Acknowledgements
-
-This codebase started as a fork of [Mastodon](https://github.com/tootsuite/mastodon/), which I stripped away line by line to learn how the ActivityPub spec works in practice. It's changed and expanded a lot since then, but I wanted to thank Gargron and everyone else that has worked on that project for pointing me in the right direction!
+1. Since your feed is public, your posts are public. You can choose specific audiences for each activity, but your outbox is read by this service in the same way that anyone else on the web can read it. Perhaps someday there will be support for authorization, but I think that adding ACL to your outbox is out of scope for a statically-served personal blog, which is the primary use case for this server.
