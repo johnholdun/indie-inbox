@@ -1,12 +1,12 @@
 require './lib/service'
 
 class FollowAccepter < Service
-  attribute :account_id
+  attribute :actor_uri
   attribute :activity
 
   def call
-    account = Oj.load(DB[:actors].where(id: account_id).first[:json])
-    follower = Oj.load(DB[:actors].where(id: activity['actor']).first[:json])
+    account = FetchAccount.call(actor_uri)
+    follower = FetchAccount.call(activity['actor'])
 
     Deliverer.call \
       account,

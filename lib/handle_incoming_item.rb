@@ -1,35 +1,43 @@
 class HandleIncomingItem
-  def initialize(account, activity, object)
-    @account = account
+  def initialize(activity, actor_id)
     @activity = activity
-    @object = object
+    @actor_id = actor_id
   end
 
   def call
     result =
       case activity['type']
       when 'Follow'
-        if object == account['id']
-          params = { actor: activity['actor'], object: account['id'] }
+        _object_id =
+          if activity['object'].is_a?(String)
+            activity['object']
+          else
+            activity['object']['id']
+          end
+        if _object_id == actor_id
+          FetchAccount.call(activity['actor'])
+          follower_id = DB[:actors].where(uri: activity['actor']).first[:id]
+          params = { actor: follower_id, object: actor_id }
           existing = DB[:follows].where(params)
           if existing.count.zero?
             DB[:follows].insert(params.merge(accepted: true))
           end
-          # Make sure we have a local copy of this person
-          FetchAccount.call(activity['actor'])
-          FollowAccepter.call(account_id: account['id'], activity: activity)
+          actor_uri = DB[:actors].where(id: actor_id).first[:uri]
+          FollowAccepter.call(actor_uri: actor_uri, activity: activity)
         end
       when 'Accept'
+        FetchAccount.call(object['actor'])
+        followed_id = DB[:actors].where(uri: object['actor']).first[:id]
         DB[:follows]
-          .where(actor: account['id'], object: object['actor'])
+          .where(actor_id: actor_id, object_id: followed_id)
           .update(accepted: true)
       when 'Undo'
-        if object['type'] == 'Follow' && object['object'] == account['id']
-          DB[:follows].where(actor: object['actor'], object: account['id']).delete
+        if object['type'] == 'Follow' && object['object'] == actor_id
+          DB[:follows].where(actor: object['actor'], object: actor_id).delete
         end
       end
 
-    puts "Handled incoming activity\n#{account['id']}\n#{activity['id']}\n#{result.inspect}"
+    puts "Handled incoming activity\n#{actor_id}\n#{activity['id']}\n#{result.inspect}"
   end
 
   def self.call(*args)
@@ -38,5 +46,26 @@ class HandleIncomingItem
 
   private
 
-  attr_reader :account, :activity, :object
+  attr_reader :actor_id, :activity
+
+  def object_or_id(obj)
+    obj.is_a?(String) ? obj : obj['id']
+  end
+
+  def object
+    @object ||=
+      if activity['object'].is_a?(Hash)
+        activity['object']
+      else
+        Request
+          .new(
+            :get,
+            activity['object'],
+            headers: { 'Accept' => 'application/activity+json, application/ld+json' }
+          )
+          .perform do |response|
+            return Oj.load(response, mode: :strict) if response.code == 200
+          end
+      end
+  end
 end

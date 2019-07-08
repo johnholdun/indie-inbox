@@ -2,52 +2,31 @@ class FollowersRoute < Route
   PAGE_SIZE = 50
 
   def call
-    @account =
-      FetchAccount.call("#{BASE_URL}/users/#{request.params['username']}")
+    actor_id = request.params['actor_id']
 
-    return not_found unless @account
+    return not_found unless actor_id
 
-    headers['Content-Type'] = 'application/activity+json'
-
+    items = DB[:follows].where(object: actor_id)
     page = request.params['page'].to_i
 
-    followers = DB[:follows].where(object: @account['id'])
+    total = items.count
 
-    total_followers = followers.count
-
-    if page > 0
-      followers =
-        followers
+    items =
+      if page > 0
+        items
         .limit(PAGE_SIZE + 1)
         .offset((page - 1) * PAGE_SIZE)
         .map(:actor)
+      end
 
-      followers_next_page = page + 1 if followers.count > PAGE_SIZE
-      followers_prev_page = page - 1 if page > 1
+    headers['Content-Type'] = 'application/activity+json'
 
-      finish_json \
-        LD_CONTEXT.merge \
-          id: account_followers_url(page),
-          type: 'OrderedCollectionPage',
-          totalItems: total_followers,
-          next: (account_followers_url(followers_next_page) if followers_next_page),
-          prev: (account_followers_url(followers_prev_page) if followers_prev_page),
-          partOf: account_followers_url,
-          items: followers[0, PAGE_SIZE]
-    else
-      finish_json \
-        LD_CONTEXT.merge \
-          id: account_followers_url,
-          type: 'OrderedCollection',
-          totalItems: total_followers,
-          first: account_followers_url(1)
-    end
-  end
-
-  private
-
-  def account_followers_url(page = nil)
-    path = @account['followers']
-    page ? "#{path}?page=#{page}" : path
+    finish_json \
+      OrderedCollectionSerializer.call \
+        uri: "/actors/#{actor_id}/followers",
+        total: total,
+        items: items,
+        page: page,
+        page_size: PAGE_SIZE
   end
 end

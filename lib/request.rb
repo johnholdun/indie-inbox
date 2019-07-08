@@ -35,6 +35,7 @@ class Request
 
   def perform
     begin
+      puts "well #{@url.inspect}"
       response =
         http_client
           .headers(@headers.reject { |k, _| k == REQUEST_TARGET })
@@ -54,7 +55,7 @@ class Request
 
   def set_common_headers!
     @headers[REQUEST_TARGET] = "#{@verb} #{@url.path}"
-    @headers['User-Agent'] = "#{HTTP::Request::USER_AGENT} (HoldunPub/0.0.1; +#{BASE_URL}/)"
+    @headers['User-Agent'] = "#{HTTP::Request::USER_AGENT} (IndieInbox/0.0.1; +#{BASE_URL}/)"
     @headers['Host'] = @url.host
     @headers['Date'] = Time.now.utc.httpdate
     @headers['Accept-Encoding'] = 'gzip' if @verb != :head

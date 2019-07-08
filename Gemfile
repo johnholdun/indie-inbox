@@ -1,15 +1,27 @@
 # frozen_string_literal: true
 
-source 'https://rubygems.org'
-ruby '>= 2.3.0', '< 2.6.0'
+source "https://rubygems.org"
 
-gem 'addressable', '~> 2.5'
-gem 'goldfinger', '~> 2.1'
-gem 'json-ld', '~> 2.2'
-gem 'link_header', '0.0.8'
-gem 'oj', '~> 3.5'
-gem 'rdf-normalize', '~> 0.3'
-gem 'sinatra', '~> 2.0', require: false
-gem 'unicorn', '~> 5.4'
-gem 'sequel', '~> 5.14'
-gem 'sqlite3', '~> 1.3'
+git_source(:github) {|repo_name| "https://github.com/#{repo_name}" }
+
+# gem "rails"
+
+gem "addressable", "~> 2.6"
+
+gem "json-ld", "~> 3.0"
+
+gem "oj", "~> 3.7"
+
+gem "rdf-normalize", "~> 0.3.3"
+
+gem "sinatra", "~> 2.0"
+
+gem "unicorn", "~> 5.5"
+
+gem "sequel", "~> 5.22"
+
+gem "dotenv", "~> 2.7"
+
+gem "pg", "~> 1.1"
+
+gem "http", "~> 3.3"

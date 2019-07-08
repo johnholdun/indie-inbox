@@ -1,30 +1,23 @@
 class ParseOutbox
-  def self.call
-    # TODO: Retry everything in `deliveries` table, delete on success
+  # Maximum age, in hours, of a post that we'll still deliver
+  MAX_AGE = 30
 
+  def self.call
     activities =
       DB[:activities]
-        .where(delivered: false)
-        .where(Sequel.like(:actor, "#{BASE_URL}%"))
+        .join(:actors, id: :actor_id)
+        .where(delivered: false, managed: true)
 
-    puts "activities:\n#{activities.map { |a| "  #{a[:id]}"}.join("\n")}"
+    puts "activities:\n#{activities.map { |a| "  #{a[:json]}"}.join("\n")}"
 
     activities.each do |a|
       puts "#{a[:id]}…"
       json = Oj.load(a[:json])
       next unless json['to']
+      next if (DateTime.now - DateTime.parse(json['published'])) * 24 > MAX_AGE
 
-      if json['object'].is_a?(String) && json['object'].start_with?(BASE_URL)
-        object = DB[:objects].where(id: json['object']).first
-        if object.is_a?(Hash)
-          json['object'] = Oj.load(object[:json])
-        else
-          puts "Could not find object #{json['object']}"
-        end
-      end
-
-      account = DB[:actors].where(id: a[:actor]).first
-      account_json = Oj.load(account[:json])
+      account = DB[:actors].where(uri: a[:actor], managed: true).first
+      account_json = FetchAccount.calll(account[:uri])
 
       # TODO: This is weird
       DB[:activities].where(id: a[:id]).update(delivered: true)
@@ -36,7 +29,7 @@ class ParseOutbox
         # add followers by shared inbox or inbox
         inbox_urls +=
           DB[:follows]
-            .where(object: account[:id], accepted: true)
+            .where(object: account[:uri], accepted: true)
             .map do |follow|
               account = FetchAccount.call(follow[:actor])
               (account['endpoints'] || {})['sharedInbox'] || account['inbox']
@@ -47,17 +40,8 @@ class ParseOutbox
 
       inbox_urls.uniq.each do |inbox_url|
         next if inbox_url == PUBLIC
-
         delivery = Deliverer.call(account_json, inbox_url, json)
-
         puts "#{inbox_url}: #{delivery[:response] > 299}"
-
-        if delivery[:response] > 299
-          DB[:deliveries].insert \
-            activity: a[:id],
-            recipient: inbox_url,
-            attempts: 1
-        end
       end
     end
   end

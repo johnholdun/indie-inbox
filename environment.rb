@@ -1,15 +1,16 @@
 require 'bundler'
 
 Bundler.require
+Dotenv.load
 
 Dir.glob('./lib/*.rb').each { |f| require(f) }
 Dir.glob('./routes/*.rb').each { |f| require(f) }
 
-USE_HTTPS = true
+CREATION_TOKEN = ENV['CREATION_TOKEN'].freeze
 
-LOCAL_DOMAIN = 'johnholdun.localtunnel.me'.freeze
+HOST = ENV['HOST'].freeze
 
-BASE_URL = "http#{'s' if USE_HTTPS}://#{LOCAL_DOMAIN}"
+BASE_URL = "https://#{HOST}"
 
 LD_CONTEXT = {
   '@context': [
@@ -20,50 +21,6 @@ LD_CONTEXT = {
 
 PUBLIC = 'https://www.w3.org/ns/activitystreams#Public'.freeze
 
-CORE_TYPES =
-  %w(
-    Object
-    Link
-    Activity
-    IntransitiveActivity
-    Collection
-    OrderedCollection
-    CollectionPage
-    OrderedCollectionPage
-  )
-
-ACTIVITY_TYPES =
-  %w(
-    Accept
-    Add
-    Announce
-    Arrive
-    Block
-    Create
-    Delete
-    Dislike
-    Flag
-    Follow
-    Ignore
-    Invite
-    Join
-    Leave
-    Like
-    Listen
-    Move
-    Offer
-    Question
-    Reject
-    Read
-    Remove
-    TentativeReject
-    TentativeAccept
-    Travel
-    Undo
-    Update
-    View
-  ).freeze
-
 ACTOR_TYPES =
   %w(
     Application
@@ -73,50 +30,7 @@ ACTOR_TYPES =
     Service
   ).freeze
 
-OBJECT_TYPES =
-  %w(
-    Article
-    Audio
-    Document
-    Event
-    Image
-    Note
-    Page
-    Place
-    Profile
-    Relationship
-    Tombstone
-    Video
-  ).freeze
-
-LINK_TYPES = %w(Mention).freeze
-
-TYPES =
-  (
-    CORE_TYPES &
-    ACTIVITY_TYPES &
-    ACTOR_TYPES &
-    OBJECT_TYPES &
-    LINK_TYPES
-  ).freeze
-
-# This is every member of OBJECT_TYPES except Tombstone
-TYPE_PARAMS =
-{
-  'Article' => 'articles',
-  'Audio' => 'audio',
-  'Document' => 'documents',
-  'Event' => 'events',
-  'Image' => 'images',
-  'Note' => 'notes',
-  'Page' => 'pages',
-  'Place' => 'places',
-  'Profile' => 'profiles',
-  'Relationship' => 'relationships',
-  'Video' => 'videos'
-}.freeze
-
-DB = Sequel.connect('sqlite://data.db')
+DB = Sequel.connect(ENV['DATABASE_URL'])
 
 Schema.load!
 

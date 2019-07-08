@@ -3,7 +3,7 @@ class ReadInboxRoute < Route
 
   def call
     @account =
-      DB[:actors].where(id: "#{BASE_URL}/users/#{request.params['username']}").first
+      DB[:actors].where(id: request.params['actor_id']).first
 
     return not_found unless @account
 
@@ -95,28 +95,10 @@ class ReadInboxRoute < Route
   def items(inbox)
     activity_ids = inbox.map { |i| i[:activity] }
 
-    activities =
-      DB[:activities]
-        .where(id: activity_ids)
-        .to_a
-        .sort_by { |a| activity_ids.index(a[:id]) }
-        .map { |a| Oj.load(a[:json]) }
-
-    object_ids =
-      activities
-        .map { |a| a['object'] }
-        .select { |o| o.is_a?(String) }
-
-    objects =
-      DB[:objects]
-        .where(id: object_ids)
-        .to_a
-        .map { |o| [o[:id], Oj.load(o[:json])] }
-        .to_h
-
-    activities.map do |activity|
-      object = activity['object']
-      activity.merge('object' => objects[object] || object)
-    end
+    DB[:activities]
+      .where(id: activity_ids)
+      .to_a
+      .sort_by { |a| activity_ids.index(a[:id]) }
+      .map { |a| Oj.load(a[:json]) }
   end
 end

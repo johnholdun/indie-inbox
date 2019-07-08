@@ -1,5 +1,2 @@
 .DS_Store
 data.db
-data.json
-inbox/*.json
-inbox-errors/*.json

@@ -9,13 +9,7 @@ class ParseInbox
     @payload = DB[:unverified_inbox].where(errors: nil).first
     raise 'no items' unless payload
 
-    inbox_account =
-      FetchAccount.call("#{BASE_URL}/users/#{payload[:username]}")
-
-    raise 'user not found' unless inbox_account
-
     process \
-      inbox_account,
       payload[:body],
       signed_request_account
 
@@ -48,7 +42,7 @@ class ParseInbox
     @headers ||= Oj.load(payload[:headers]) rescue {}
   end
 
-  def process(inbox_account, body, account)
+  def process(body, account)
     json = Oj.load(body, mode: :strict)
 
     return unless supported_context?(json)
@@ -66,54 +60,43 @@ class ParseInbox
       return unless account
     end
 
-    object = json['object']
-    if object.is_a?(String)
-      # TODO: Fetch object at this URI for local storage
-    else
-      # TODO: Verify that this object is real
-      # TODO: Be careful about intended audience for this object?
-      existing = DB[:objects].where(id: object['id'])
+    # If we've already seen this activity, ignore it
+    return unless DB[:activities].where(uri: json['id']).count.zero?
 
-      if existing.count > 0
-        existing.update(json: object.to_json)
-      else
-        DB[:objects].insert \
-          id: object['id'],
-          type: object['type'],
-          published: object['published'],
-          json: object.to_json
-      end
+    inboxes = %w(to cc bcc).flat_map { |m| json[m] }.compact
 
-      json['object'] = object['id']
+    recipients = []
+
+    if inboxes.include?(PUBLIC) || inboxes.include?(account['followers'])
+      recipients +=
+        DB[:follows]
+          .join(:actors, id: :actor_id)
+          .where(object_id: account['id'], managed: true, accepted: true)
+          .map(:actor_id)
     end
 
-    params =
-      {
-        id: json['id'],
-        type: json['type'],
-        actor: json['actor'],
-        object: json['object'],
-        target: json['target'],
-        published: json['published'],
-        json: json.reject { |k, _| %w(@context signature).include?(k) }.to_json
-      }
+    recipients +=
+      DB[:actors]
+        .where(managed: true, uri: inboxes)
+        .map(:actor_id)
 
-    existing = DB[:activities].where(id: params[:id])
+    recipients.uniq!
 
-    if existing.count > 0
-      existing.update(params)
-    else
-      DB[:activities].insert(params)
+    if recipients.size.zero?
+      puts 'No recipients'
+      return
     end
 
-    inbox_params =
-      {
-        actor: inbox_account['id'],
-        activity: json['id']
-      }
+    DB[:activities].insert \
+      uri: json['id'],
+      actor_id: DB[:actors].where(uri: account['id']).first[:id],
+      json: json
 
-    DB[:inbox].where(inbox_params).delete
-    DB[:inbox].insert(inbox_params)
+    activity_id = DB[:activities].where(uri: json['id']).first[:id]
+
+    recipients.each do |actor_id|
+      DB[:inbox].insert(actor_id: actor_id, activity_id: activity_id)
+    end
 
     items =
       case json['type']
@@ -125,8 +108,12 @@ class ParseInbox
         [json]
       end
 
-    items.reverse_each do |item|
-      HandleIncomingItem.call(inbox_account, item, object)
+    actor_ids = DB[:actors].where(uri: recipients).map(:id)
+
+    actor_ids.each do |actor_id|
+      items.reverse_each do |item|
+        HandleIncomingItem.call(item, actor_id)
+      end
     end
   rescue Oj::ParseError
     nil

@@ -1,25 +1,16 @@
 require 'sinatra/base'
 
-class ActivityPub < Sinatra::Application
+class IndieInbox < Sinatra::Application
   @my_routes =
     [
-      [:get, '/.well-known/host-meta/?', HostMetaRoute],
-      [:get, '/.well-known/webfinger/?', WebfingerRoute],
-
-      [:get, '/users/:username/outbox/?', OutboxRoute],
-      [:post, '/users/:username/outbox/?', CreateOutboxRoute],
-
-      [:get, '/users/:username/inbox/?', ReadInboxRoute],
-      [:post, '/users/:username/inbox/?', InboxRoute],
-
-      [:get, '/users/:username/?', AccountRoute],
-
-      [:get, '/users/:username/followers/?', FollowersRoute],
-      [:get, '/users/:username/following/?', FollowingRoute],
-      [:get, '/users/:username/collections/:id/?', CollectionRoute],
-
-      [:get, '/users/:username/activities/:id/?', ReadActivityRoute],
-      [:get, '/users/:username/:type/:id/?', ReadObjectRoute]
+      [:post, '/actors/?', CreateActorRoute],
+      [:get, '/actors/:actor_id/?', RedirectActorRoute],
+      [:put, '/actors/:actor_id/?', FetchOutboxRoute],
+      [:get, '/actors/:actor_id/inbox/?', ReadInboxRoute],
+      [:post, '/actors/:actor_id/inbox/?', InboxRoute],
+      [:post, '/inbox/?', InboxRoute],
+      [:get, '/actors/:actor_id/followers/?', FollowersRoute],
+      [:get, '/actors/:actor_id/following/?', FollowingRoute]
     ]
 
   @my_routes.each do |meth, path, klass|
