@@ -32,6 +32,7 @@ GEM
     rack-protection (2.0.5)
       rack
     raindrops (0.19.0)
+    rake (12.3.2)
     rdf (3.0.12)
       hamster (~> 3.0)
       link_header (~> 0.0, >= 0.0.8)
@@ -61,6 +62,7 @@ DEPENDENCIES
   json-ld (~> 3.0)
   oj (~> 3.7)
   pg (~> 1.1)
+  rake (~> 12.3)
   rdf-normalize (~> 0.3.3)
   sequel (~> 5.22)
   sinatra (~> 2.0)

@@ -25,3 +25,5 @@ gem "dotenv", "~> 2.7"
 gem "pg", "~> 1.1"
 
 gem "http", "~> 3.3"
+
+gem "rake", "~> 12.3"

@@ -35,7 +35,6 @@ class Request
 
   def perform
     begin
-      puts "well #{@url.inspect}"
       response =
         http_client
           .headers(@headers.reject { |k, _| k == REQUEST_TARGET })
