@@ -3,10 +3,10 @@ class ParseOutbox
   MAX_AGE = 30
 
   def self.call
-    activities =
-      DB[:activities]
-        .join(:actors, id: :actor_id)
-        .where(delivered: false, managed: true)
+    # TODO: This should be a join but I'm not sure how to get Sequel to not
+    # clobber the `json` column and I don't feel like looking it up right now
+    actor_ids = DB[:actors].where(managed: true)
+    activities = DB[:activities].where(actor_id: actor_ids, delivered: false)
 
     puts "activities:\n#{activities.map { |a| "  #{a[:json]}"}.join("\n")}"
 
