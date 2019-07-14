@@ -6,7 +6,7 @@ class FollowingRoute < Route
 
     return not_found unless actor_id
 
-    items = DB[:follows].where(actor: actor_id)
+    items = DB[:follows].where(actor_id: actor_id, accepted: true)
     page = request.params['page'].to_i
 
     total = items.count
