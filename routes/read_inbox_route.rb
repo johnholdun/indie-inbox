@@ -71,7 +71,7 @@ class ReadInboxRoute < Route
   end
 
   def all_activities
-    @all_activities ||= DB[:inbox].where(actor: @account['id'])
+    @all_activities ||= DB[:inbox].join(:actors, id: :actor_id).where(uri: @account['id'])
   end
 
   def fetch_activities(params)
