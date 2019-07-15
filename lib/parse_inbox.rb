@@ -70,10 +70,14 @@ class ParseInbox
     recipients = []
 
     # TODO: What about unfollows and follow acceptances?
-    if json['type'] == 'Follow'
+    case json['type']
+    when 'Follow'
       actor_uri = json['object'].is_a?(String) ? json['object'] : json['object']['id']
-      puts "it is a follow of #{actor_uri}"
       inboxes.push(actor_uri)
+    when 'Undo'
+      puts "uh undo #{json.to_json}"
+    when 'Accept'
+      puts "uh accept #{json.to_json}"
     end
 
     if inboxes.include?(PUBLIC) || inboxes.include?(account['followers'])
