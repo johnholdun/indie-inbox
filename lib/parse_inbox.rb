@@ -69,6 +69,7 @@ class ParseInbox
 
     recipients = []
 
+    # TODO: What about unfollows and follow acceptances?
     if json['type'] == 'Follow'
       actor_uri = json['object'].is_a?(String) ? json['object'] : json['object']['id']
       puts "it is a follow of #{actor_uri}"
@@ -116,9 +117,7 @@ class ParseInbox
         [json]
       end
 
-    actor_ids = DB[:actors].where(uri: recipients).map(:id)
-
-    actor_ids.each do |actor_id|
+    recipients.each do |actor_id|
       items.reverse_each do |item|
         HandleIncomingItem.call(item, actor_id)
       end
