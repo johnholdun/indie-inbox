@@ -45,6 +45,8 @@ class ParseInbox
   def process(body, account)
     json = Oj.load(body, mode: :strict)
 
+    puts "#{json['id']}…"
+
     return unless supported_context?(json)
 
     if different_actor?(json, account)
