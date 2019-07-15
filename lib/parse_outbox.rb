@@ -60,11 +60,14 @@ class ParseOutbox
             end
       end
 
-      puts "inbox_urls:\n#{inbox_urls.compact.uniq.sort.map { |d| "  #{d}" }.join("\n")}"
+      inbox_urls.compact!
+      inbox_urls.uniq!
+
+      puts "inbox_urls:\n#{inbox_urls.sort.map { |d| "  #{d}" }.join("\n")}"
 
       account_json = FetchAccount.call(a[:actor_uri])
 
-      inbox_urls.uniq.each do |inbox_url|
+      inbox_urls.each do |inbox_url|
         next if inbox_url == PUBLIC
         delivery = Deliverer.call(account_json, inbox_url, json)
         puts "#{inbox_url}: #{delivery[:response] > 299}"
