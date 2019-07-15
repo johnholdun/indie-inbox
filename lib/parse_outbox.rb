@@ -55,7 +55,7 @@ class ParseOutbox
           DB[:follows]
             .where(object_id: DB[:actors].where(uri: a[:actor_uri]).first[:id], accepted: true)
             .map do |follow|
-              account = FetchAccount.call(follow[:actor])
+              account = FetchAccount.call(DB[:actors].where(id: follow[:actor_id]).first[:uri])
               (account['endpoints'] || {})['sharedInbox'] || account['inbox']
             end
       end
