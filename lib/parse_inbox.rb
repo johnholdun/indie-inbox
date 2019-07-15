@@ -96,6 +96,7 @@ class ParseInbox
         .where(managed: true, uri: inboxes)
         .map(:actor_id)
 
+    recipients.compact!
     recipients.uniq!
 
     if recipients.size.zero?
