@@ -8,6 +8,7 @@ class ParseInbox
 
     @payload = DB[:unverified_inbox].where(errors: nil).first
     raise 'no items' unless payload
+    puts "row id: #{@payload[:id]}"
 
     process \
       payload[:body],
@@ -27,7 +28,7 @@ class ParseInbox
       .update(errors: error.to_json)
   ensure
     # Unless we hit the end of the queue, run this again
-    self.call if payload
+    self.class.call if payload
   end
 
   def self.call
