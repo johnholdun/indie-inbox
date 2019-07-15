@@ -39,9 +39,17 @@ class ParseOutbox
         next
       end
 
-      inbox_urls = %w(to cc bcc).map { |k| json[k] }.flatten.compact
+      recipients = %w(to cc bcc).map { |k| json[k] }.flatten.compact
 
-      if inbox_urls.include?(PUBLIC)
+      inbox_urls =
+        recipients.map do |uri|
+          next if uri == PUBLIC
+          # TODO: Support an activity address to a collection
+          account = FetchAccount.call(uri)
+          (account['endpoints'] || {})['sharedInbox'] || account['inbox']
+        end
+
+      if recipients.include?(PUBLIC)
         # add followers by shared inbox or inbox
         inbox_urls +=
           DB[:follows]
