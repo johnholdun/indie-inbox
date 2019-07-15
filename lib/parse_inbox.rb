@@ -68,7 +68,9 @@ class ParseInbox
     recipients = []
 
     if json['type'] == 'Follow'
-      recipients.push(json['object'].is_a?(String) ? json['object'] : json['object']['id'])
+      actor_uri = json['object'].is_a?(String) ? json['object'] : json['object']['id']
+      puts "it is a follow of #{actor_uri}"
+      inboxes.push(actor_uri)
     end
 
     if inboxes.include?(PUBLIC) || inboxes.include?(account['followers'])
