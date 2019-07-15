@@ -15,7 +15,10 @@ class FetchOutboxRoute < Route
     # TODO: Fetch next page if there are activities we haven't seen? Maybe set a
     # limit?
     items['orderedItems'].each do |activity|
-      DB[:activities].insert(actor_id: actor_id, json: activity.to_json)
+      id = activity.is_a?(String) ? activity : activity['id']
+      existing = DB[:activities].where(uri: id).count > 0
+      next if existing
+      DB[:activities].insert(actor_id: actor_id, uri: id, json: activity.to_json)
     end
 
     return finish(nil, 202)
