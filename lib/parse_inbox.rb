@@ -75,7 +75,10 @@ class ParseInbox
       actor_uri = json['object'].is_a?(String) ? json['object'] : json['object']['id']
       inboxes.push(actor_uri)
     when 'Undo'
-      puts "uh undo #{json.to_json}"
+      if json['object'].is_a?(Hash) && json['object']['type'] == 'Follow'
+        actor_uri = json['object']['object'].is_a?(String) ? json['object']['object'] : json['object']['object']['id']
+        inboxes.push(actor_uri)
+      end
     when 'Accept'
       puts "uh accept #{json.to_json}"
     end
