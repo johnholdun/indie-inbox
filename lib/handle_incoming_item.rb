@@ -17,7 +17,7 @@ class HandleIncomingItem
         if _object_id == actor_id
           FetchAccount.call(activity['actor'])
           follower_id = DB[:actors].where(uri: activity['actor']).first[:id]
-          params = { actor: follower_id, object: actor_id }
+          params = { actor_id: follower_id, object_id: actor_id }
           existing = DB[:follows].where(params)
           if existing.count.zero?
             DB[:follows].insert(params.merge(accepted: true))
@@ -33,7 +33,8 @@ class HandleIncomingItem
           .update(accepted: true)
       when 'Undo'
         if object['type'] == 'Follow' && object['object'] == actor_id
-          DB[:follows].where(actor: object['actor'], object: actor_id).delete
+          follower_id = DB[:actors].where(uri: object['actor']).first[:id]
+          DB[:follows].where(actor_id: follower_id, object_id: actor_id).delete
         end
       end
 
