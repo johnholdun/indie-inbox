@@ -69,6 +69,8 @@ class LinkedDataSignature
 
     to_be_signed = options_hash + document_hash
 
+    puts "um? #{creator['id']} #{DB[:actors].where(uri: creator['id']).count}"
+
     keypair =
       OpenSSL::PKey::RSA.new(DB[:actors].where(uri: creator['id']).first[:private_key])
 
