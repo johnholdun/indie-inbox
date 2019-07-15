@@ -1,5 +1,3 @@
-require './lib/service'
-
 class FollowAccepter < Service
   attribute :actor_uri
   attribute :activity

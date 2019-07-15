@@ -1,4 +1,4 @@
-require './jsonld_helper'
+require './lib/jsonld_helper'
 
 class Symbol
   def start_with?(*args)

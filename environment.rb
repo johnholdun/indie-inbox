@@ -3,6 +3,9 @@ require 'bundler'
 Bundler.require
 Dotenv.load
 
+require './lib/service'
+require './lib/route'
+
 Dir.glob('./lib/*.rb').each { |f| require(f) }
 Dir.glob('./routes/*.rb').each { |f| require(f) }
 
