@@ -180,7 +180,7 @@ class ParseInbox
         if signed_header == Request::REQUEST_TARGET
           "#{Request::REQUEST_TARGET}: #{payload[:request_method].downcase} #{payload[:path]}"
         elsif signed_header == 'digest'
-          "digest: SHA-256=#{Digest::SHA256.base64digest(payload[:body])}"
+          "digest: SHA-256=#{Digest::SHA256.base64digest(payload[:body].to_json)}"
         else
           header =
             headers[signed_header.split(/-/).map(&:capitalize).join('-')]
