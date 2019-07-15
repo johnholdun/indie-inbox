@@ -67,6 +67,10 @@ class ParseInbox
 
     recipients = []
 
+    if json['type'] == 'Follow'
+      recipients.push(json['object'].is_a?(String) ? json['object'] : json['object']['id'])
+    end
+
     if inboxes.include?(PUBLIC) || inboxes.include?(account['followers'])
       recipients +=
         DB[:follows]
