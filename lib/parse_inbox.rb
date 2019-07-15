@@ -203,6 +203,6 @@ class ParseInbox
 
     return account if verified
 
-    raise "Verification failed for #{account['id']}"
+    raise "Verification failed for #{account['id']}\n#{signed_string}"
   end
 end
