@@ -1,3 +1,5 @@
+require './jsonld_helper'
+
 class Symbol
   def start_with?(*args)
     to_s.start_with?(*args)
