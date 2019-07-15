@@ -94,7 +94,7 @@ class ParseInbox
     recipients +=
       DB[:actors]
         .where(managed: true, uri: inboxes)
-        .map(:actor_id)
+        .map(:id)
 
     recipients.compact!
     recipients.uniq!
