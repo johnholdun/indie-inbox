@@ -14,8 +14,9 @@ class Request
     account = options[:account]
 
     if account
+      # TODO: This is duplicated in LinkedDataSignature
       keypair =
-        OpenSSL::PKey::RSA.new(DB[:actors].where(id: account['id']).first[:private_key])
+        OpenSSL::PKey::RSA.new(DB[:actors].where(uri: account['id']).first[:private_key].gsub(/\\n/, "\n"))
 
       signature =
         Base64.strict_encode64 \
