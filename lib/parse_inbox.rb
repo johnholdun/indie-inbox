@@ -106,7 +106,7 @@ class ParseInbox
     DB[:activities].insert \
       uri: json['id'],
       actor_id: DB[:actors].where(uri: account['id']).first[:id],
-      json: json
+      json: json.to_json
 
     activity_id = DB[:activities].where(uri: json['id']).first[:id]
 
