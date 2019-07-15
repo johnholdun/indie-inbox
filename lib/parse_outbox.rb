@@ -60,7 +60,7 @@ class ParseOutbox
             end
       end
 
-      puts "inbox_urls:\n#{inbox_urls.uniq.sort.map { |d| "  #{d}" }.join("\n")}"
+      puts "inbox_urls:\n#{inbox_urls.compact.uniq.sort.map { |d| "  #{d}" }.join("\n")}"
 
       account_json = FetchAccount.call(a[:actor_uri])
 
