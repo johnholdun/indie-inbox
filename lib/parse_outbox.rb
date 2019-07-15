@@ -53,7 +53,7 @@ class ParseOutbox
         # add followers by shared inbox or inbox
         inbox_urls +=
           DB[:follows]
-            .where(object: a[:actor_uri], accepted: true)
+            .where(object_id: DB[:actors].where(uri: a[:actor_uri]).first[:id], accepted: true)
             .map do |follow|
               account = FetchAccount.call(follow[:actor])
               (account['endpoints'] || {})['sharedInbox'] || account['inbox']

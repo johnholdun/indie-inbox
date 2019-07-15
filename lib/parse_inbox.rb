@@ -181,7 +181,6 @@ class ParseInbox
         if signed_header == Request::REQUEST_TARGET
           "#{Request::REQUEST_TARGET}: #{payload[:request_method].downcase} #{payload[:path]}"
         elsif signed_header == 'digest'
-          puts "ummmmm digest #{payload[:body]}"
           "digest: SHA-256=#{Digest::SHA256.base64digest(payload[:body])}"
         else
           header =
@@ -191,8 +190,6 @@ class ParseInbox
         end
       end
       .join("\n")
-
-    puts "asdfasdfsadf #{account['publicKey']['publicKeyPem'].inspect}"
 
     keypair =
       OpenSSL::PKey::RSA.new(account['publicKey']['publicKeyPem'])
