@@ -8,13 +8,13 @@ class HandleIncomingItem
     result =
       case activity['type']
       when 'Follow'
-        _object_id =
+        object_uri =
           if activity['object'].is_a?(String)
             activity['object']
           else
             activity['object']['id']
           end
-        if _object_id == actor_id
+        if object_uri == DB[:actors].where(id: actor_id).first[:uri]
           FetchAccount.call(activity['actor'])
           follower_id = DB[:actors].where(uri: activity['actor']).first[:id]
           params = { actor_id: follower_id, object_id: actor_id }
