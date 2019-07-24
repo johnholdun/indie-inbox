@@ -39,6 +39,10 @@ class ParseOutbox
         next
       end
 
+      if json['object'].is_a?(String)
+        json['object'] = fetch(json['object'])
+      end
+
       recipients = %w(to cc bcc).map { |k| json[k] }.flatten.compact
 
       inbox_urls =
