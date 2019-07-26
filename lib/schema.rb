@@ -42,5 +42,21 @@ class Schema
       foreign_key :actor_id, :actors, type: :uuid
       column :errors, :json
     end
+
+    DB.add_column \
+      :unverified_inbox,
+      :cursor,
+      :integer,
+      null: false,
+      default: 0,
+      if_not_exists: true
+
+    DB.add_column \
+      :inbox,
+      :cursor,
+      :integer,
+      null: false,
+      default: 0,
+      if_not_exists: true
   end
 end

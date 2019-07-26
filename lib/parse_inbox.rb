@@ -85,10 +85,11 @@ class ParseInbox
     end
 
     if inboxes.include?(PUBLIC) || inboxes.include?(account['followers'])
+      actor_id = DB[:actors].where(uri: account['id']).first[:id]
       recipients +=
         DB[:follows]
           .join(:actors, id: :actor_id)
-          .where(object_id: account['id'], managed: true, accepted: true)
+          .where(object_id: actor_id, managed: true, accepted: true)
           .map(:actor_id)
     end
 
@@ -113,7 +114,10 @@ class ParseInbox
     activity_id = DB[:activities].where(uri: json['id']).first[:id]
 
     recipients.each do |actor_id|
-      DB[:inbox].insert(actor_id: actor_id, activity_id: activity_id)
+      DB[:inbox].insert \
+        actor_id: actor_id,
+        activity_id: activity_id,
+        cursor: payload[:cursor]
     end
 
     items =

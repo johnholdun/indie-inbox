@@ -11,6 +11,8 @@ class ReadInboxRoute < Route
       return finish('Not authorized', 401)
     end
 
+    @actor_id = @account[:id]
+
     @account = Oj.load(@account[:json])
 
     headers['Content-Type'] = 'application/activity+json'
@@ -18,13 +20,10 @@ class ReadInboxRoute < Route
     if request.params['cursor']
       activities = fetch_activities(request.params)
 
-      min_cursor = all_activities.order(:id).select(:id).first[:id]
-      max_cursor = all_activities.reverse(:id).select(:id).first[:id]
-
       next_cursor =
         if activities.size > 0
-          if activities.first[:id] < max_cursor
-            activities.first[:id]
+          if activities.first[:cursor] < max_cursor
+            activities.first[:cursor]
           end
         elsif request.params['cursor'] =~ /^-/
           request.params['cursor'].to_i.abs
@@ -32,8 +31,8 @@ class ReadInboxRoute < Route
 
       prev_cursor =
         if activities.size > 0
-          if activities.last[:id] > min_cursor
-            "-#{activities.last[:id]}"
+          if activities.last[:cursor] > min_cursor
+            "-#{activities.last[:cursor]}"
           end
         elsif request.params['cursor'] !~ /^-/
           "-#{request.params['cursor'].to_i}"
@@ -47,7 +46,7 @@ class ReadInboxRoute < Route
           next: (account_inbox_url(cursor: next_cursor) if next_cursor),
           prev: (account_inbox_url(cursor: prev_cursor) if prev_cursor),
           partOf: account_inbox_url,
-          orderedItems: items(activities)
+          orderedItems: activities.map { |a| Oj.load(a[:json]) }
     else
       finish_json \
         LD_CONTEXT.merge \
@@ -71,7 +70,25 @@ class ReadInboxRoute < Route
   end
 
   def all_activities
-    @all_activities ||= DB[:inbox].join(:actors, id: :actor_id).where(uri: @account['id'])
+    @all_activities ||=
+      DB[:inbox]
+        .select(
+          Sequel[:inbox][:actor_id].as(:actor_id),
+          Sequel[:inbox][:cursor].as(:cursor),
+          Sequel[:activities][:json].as(:json)
+        )
+        .join(:activities, id: :activity_id)
+        .where(Sequel[:inbox][:actor_id] => @actor_id)
+  end
+
+  def min_cursor
+    @min_cursor ||=
+      DB[:inbox].order(:cursor).where(actor_id: @actor_id).first[:cursor]
+  end
+
+  def max_cursor
+    @max_cursor ||=
+      DB[:inbox].reverse(:cursor).where(actor_id: @actor_id).first[:cursor]
   end
 
   def fetch_activities(params)
@@ -80,25 +97,17 @@ class ReadInboxRoute < Route
     cursor = params['cursor']
 
     if cursor == '0'
-      query = query.order(:id)
+      query = query.order(:cursor)
     elsif cursor == '-0'
-      query = query.reverse(:id)
+      query = query.reverse(:cursor)
     elsif cursor =~ /^-/
-      query = query.reverse(:id).where { id < cursor.to_i.abs }
+      query = query.reverse(:cursor).where { cursor < cursor.to_i.abs }
     else
-      query = query.order(:id).where { id > cursor.to_i }
+      query = query.order(:cursor).where { cursor > cursor.to_i }
     end
 
-    query.to_a.sort_by { |a| a[:id] }.reverse
-  end
-
-  def items(inbox)
-    activity_ids = inbox.map { |i| i[:activity] }
-
-    DB[:activities]
-      .where(id: activity_ids)
-      .to_a
-      .sort_by { |a| activity_ids.index(a[:id]) }
-      .map { |a| Oj.load(a[:json]) }
+    result = query.to_a
+    result.reverse! if cursor =~ /^-/
+    result
   end
 end
