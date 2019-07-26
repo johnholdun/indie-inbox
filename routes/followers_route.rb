@@ -14,7 +14,7 @@ class FollowersRoute < Route
           Sequel[:actors][:uri].as(:actor_uri)
         )
         .join(:actors, id: :actor_id)
-        .where(object_id: actor_id)
+        .where(object_id: actor_id, accepted: true)
 
     page = request.params['page'].to_i
 
