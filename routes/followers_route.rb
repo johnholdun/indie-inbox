@@ -6,7 +6,16 @@ class FollowersRoute < Route
 
     return not_found unless actor_id
 
-    items = DB[:follows].where(object_id: actor_id)
+    items =
+      DB[:follows]
+        .select(
+          Sequel[:follows][:object_id].as(:object_id),
+          Sequel[:follows][:actor_id].as(:actor_id),
+          Sequel[:actors][:uri].as(:actor_uri)
+        )
+        .join(:actors, id: :actor_id)
+        .where(object_id: actor_id)
+
     page = request.params['page'].to_i
 
     total = items.count
@@ -16,7 +25,7 @@ class FollowersRoute < Route
         items
         .limit(PAGE_SIZE + 1)
         .offset((page - 1) * PAGE_SIZE)
-        .map(:actor)
+        .map(:actor_uri)
       end
 
     headers['Content-Type'] = 'application/activity+json'
