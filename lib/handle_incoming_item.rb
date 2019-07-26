@@ -28,9 +28,13 @@ class HandleIncomingItem
       when 'Accept'
         FetchAccount.call(object['actor'])
         followed_id = DB[:actors].where(uri: object['actor']).first[:id]
-        DB[:follows]
-          .where(actor_id: actor_id, object_id: followed_id)
-          .update(accepted: true)
+        follow_params = { actor_id: actor_id, object_id: followed_id }
+        follow = DB[:follows].where(follow_params)
+        if follow.count > 0
+          follow.update(accepted: true)
+        else
+          DB[:follows].insert(follow_params.merge(accepted: true))
+        end
       when 'Undo'
         if object['type'] == 'Follow' && object['object'] == actor_id
           follower_id = DB[:actors].where(uri: object['actor']).first[:id]
