@@ -81,7 +81,7 @@ class ParseInbox
         inboxes.push(actor_uri)
       end
     when 'Accept'
-      puts "uh accept #{json.to_json}"
+      inboxes.push(json['object']['actor'])
     end
 
     if inboxes.include?(PUBLIC) || inboxes.include?(account['followers'])
