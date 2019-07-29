@@ -101,10 +101,7 @@ class ParseInbox
     recipients.compact!
     recipients.uniq!
 
-    if recipients.size.zero?
-      puts 'No recipients'
-      return
-    end
+    raise 'No recipients' if recipients.size.zero?
 
     DB[:activities].insert \
       uri: json['id'],
