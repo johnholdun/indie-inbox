@@ -1,6 +1,6 @@
 class FetchOutboxRoute < Route
   def call
-    actor_id = request.params['actor_id']
+    @actor_id = request.params['actor_id']
     actor = DB[:actors].where(id: actor_id, managed: true).first
 
     return not_found unless actor
@@ -10,21 +10,32 @@ class FetchOutboxRoute < Route
 
     # TODO: Rate limiting/caching on this request
     outbox = fetch(actor['outbox'])
-    items = fetch(outbox['first'])
-
-    # TODO: Fetch next page if there are activities we haven't seen? Maybe set a
-    # limit?
-    items['orderedItems'].each do |activity|
-      id = activity.is_a?(String) ? activity : activity['id']
-      existing = DB[:activities].where(uri: id).count > 0
-      next if existing
-      DB[:activities].insert(actor_id: actor_id, uri: id, json: activity.to_json)
-    end
+    save_outbox_page(outbox['first'])
 
     return finish(nil, 202)
   end
 
   private
+
+  attr_reader :actor_id
+
+  def save_outbox_page(url)
+    page = fetch(url)
+
+    found = 0
+
+    page['orderedItems'].each do |activity|
+      id = activity.is_a?(String) ? activity : activity['id']
+      existing = DB[:activities].where(uri: id).count > 0
+      next if existing
+      found += 1
+      DB[:activities].insert(actor_id: actor_id, uri: id, json: activity.to_json)
+    end
+
+    return if found.zero?
+    return unless page['next'] && !page['next'].size.zero?
+    save_outbox_page(page['next'])
+  end
 
   def fetch(uri)
     Request
