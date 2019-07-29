@@ -8,7 +8,7 @@ class InboxRoute < Route
       headers: request['headers'].to_json,
       path: request.path,
       request_method: request.request_method.downcase,
-      cursor: (Time.now.to_f * 1000).to_i
+      cursor: Time.now.to_i
 
     202
   end
