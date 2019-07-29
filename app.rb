@@ -1,6 +1,17 @@
 require 'sinatra/base'
 
+if ENV.key?('AIRBRAKE_API_KEY')
+  Airbrake.configure do |c|
+    c.project_id = ENV['AIRBRAKE_PROJECT_ID']
+    c.project_key = ENV['AIRBRAKE_API_KEY']
+
+    c.logger.level = Logger::DEBUG
+  end
+end
+
 class IndieInbox < Sinatra::Application
+  use Airbrake::Rack::Middleware
+
   @my_routes =
     [
       [:post, '/actors/?', CreateActorRoute],

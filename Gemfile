@@ -27,3 +27,5 @@ gem "pg", "~> 1.1"
 gem "http", "~> 3.3"
 
 gem "rake", "~> 12.3"
+
+gem "airbrake", "~> 9.4"

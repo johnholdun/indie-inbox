@@ -3,6 +3,10 @@ GEM
   specs:
     addressable (2.6.0)
       public_suffix (>= 2.0.2, < 4.0)
+    airbrake (9.4.0)
+      airbrake-ruby (~> 4.5)
+    airbrake-ruby (4.5.1)
+      rbtree3 (~> 0.5)
     concurrent-ruby (1.1.5)
     domain_name (0.5.20190701)
       unf (>= 0.0.5, < 1.0.0)
@@ -33,6 +37,7 @@ GEM
       rack
     raindrops (0.19.0)
     rake (12.3.2)
+    rbtree3 (0.5.0)
     rdf (3.0.12)
       hamster (~> 3.0)
       link_header (~> 0.0, >= 0.0.8)
@@ -57,6 +62,7 @@ PLATFORMS
 
 DEPENDENCIES
   addressable (~> 2.6)
+  airbrake (~> 9.4)
   dotenv (~> 2.7)
   http (~> 3.3)
   json-ld (~> 3.0)
