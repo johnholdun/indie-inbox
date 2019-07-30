@@ -88,7 +88,7 @@ class FetchAccount
         headers: { 'Accept' => 'application/activity+json, application/ld+json' }
       )
       .perform do |response|
-        return Oj.load(response, mode: :strict) if response.code == 200
+        return Oj.load(response.body_with_limit, mode: :strict) if response.code == 200
       end
   rescue Oj::ParseError
     nil
