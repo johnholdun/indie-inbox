@@ -8,7 +8,8 @@ class ParseOutbox
         .select(
           Sequel[:activities][:id].as(:id),
           Sequel[:activities][:json].as(:json),
-          Sequel[:actors][:uri].as(:actor_uri)
+          Sequel[:actors][:uri].as(:actor_uri),
+          Sequel[:actors][:id].as(:actor_id)
         )
         .join(:actors, id: :actor_id)
         .where(delivered: false, managed: true)
@@ -41,6 +42,14 @@ class ParseOutbox
 
       if json['object'].is_a?(String)
         json['object'] = fetch(json['object'])
+      end
+
+      if json['type'] == 'Follow'
+        following_uri = FetchAccount.call(json['object']['id'])
+        following_id = DB[:actors].where(uri: following_uri).first[:id]
+        params = { actor_id: a[:actor_id], object_id: following_id }
+        existing = DB[:follows].where(params)
+        DB[:follows].insert(params) if existing.count.zero?
       end
 
       recipients = %w(to cc bcc).map { |k| json[k] }.flatten.compact
